@@ -7,7 +7,7 @@
 
 #include "esp_def.h"
 
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 #include "server.h"
 
@@ -77,7 +77,6 @@ void checkButtonAndBlinkLed() {
 			}else if (count > 50) {
 				DEBUG_PRINT("Change WiFi mode...");
 				WiFi.mode(WIFI_AP_STA);
-				//DEBUG_PRINT("Enable AP: " << ssidAP.c_str() << ", IP: " << WiFi.softAPIP().toString());
 
 			}else if (count > 20) {
 
