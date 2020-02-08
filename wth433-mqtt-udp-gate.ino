@@ -166,10 +166,15 @@ typedef struct i2c_packet {
 	};
 	//uint8_t type;
 	union {
-		byte abtemperature[2]; // в самом старшем полубайте поместим номер датчика
-		int16_t temperature;
+		byte abtemperature[2]; // в самом старшем полубайте (это второй байт) поместим номер датчика
+		int16_t temperature;	 
 	};
 	uint8_t humidity; 
+	uint8_t crc;
+	void calc_crc(uint8_t pos) {
+		abtemperature[1] = abtemperature[1] & 0b00001111 | (pos << 4);
+		crc = crc8((uint8_t*)this, sizeof(*this) - 1);
+	};
 };
 
 
@@ -246,18 +251,28 @@ void sendSensorsData() {
 		}break;
 		}
 
-		/*for (uint8_t i = 0; i < sizeof(tmpData); i++) {
+		//tmpData.calc_crc(i);
+
+
+		Serial.println();
+
+		for (uint8_t i = 0; i < TH433ReceiverClass::Const::packet_len_bytes; i++) {
+			Serial.print(toBin(buffer[i])); Serial.print(' ');
+		}
+		Serial.println();
+
+		for (uint8_t i = 0; i < sizeof(tmpData); i++) {
 			Serial.print(toBin(((uint8_t*)&tmpData)[i])); Serial.print(' ');
 		}
 		Serial.println();
 
 		Serial.print(tmpData.id, HEX); Serial.print(' ');
-		Serial.print(tmpData.temperature); Serial.print(' ');
-		Serial.print(tmpData.temperature - 500); Serial.print(' ');
+		Serial.print(tmpData.temperature); Serial.print(" -> ");
+		Serial.print(int((tmpData.temperature & 0x0fff) - 500)); Serial.print(' ');
 		Serial.print(tmpData.humidity & 0b1111111); Serial.print(' ');
 		Serial.print(tmpData.humidity >> 7); Serial.print(' ');
 		Serial.println();
-		*/
+		
 		
 
 		if (tmpData.id) {
@@ -279,6 +294,7 @@ void sendSensorsData() {
 					//Serial.print(":send");
 				}
 				Serial.println();
+				//for (;;);
 		
 		}
 	}
