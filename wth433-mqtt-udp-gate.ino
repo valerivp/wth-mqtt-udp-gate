@@ -31,6 +31,7 @@ void onWiFiEvent(WiFiEvent_t event)
 			DEBUG_PRINT(F("Connected to: ") << WiFi.SSID());
 			WiFi.enableAP(false);
 			WiFi.setAutoReconnect(true);
+			setLedState(1);
 		}break;
 
 	default:
@@ -170,13 +171,33 @@ typedef struct i2c_packet {
 		int16_t temperature;	 
 	};
 	uint8_t humidity; 
-	uint8_t crc;
-	void calc_crc(uint8_t pos) {
+	//uint8_t timeLabel;
+	//uint8_t crc;
+	/*void calc_crc(uint8_t pos) {
 		abtemperature[1] = abtemperature[1] & 0b00001111 | (pos << 4);
 		crc = crc8((uint8_t*)this, sizeof(*this) - 1);
-	};
+	};*/
 };
 
+enum Settings :uint16_t {
+	maxSensors = 0x20,
+	maxTTL = 0x03ff
+};
+struct KnownSensor {
+	uint16_t id;
+	uint16_t lt;
+};
+static KnownSensor KnownSensors[Settings::maxSensors] = {};
+
+void checkKnownSensors() {
+	for (int i = 0; i < sizeofArray(KnownSensors); i++) {
+		KnownSensor& ks = KnownSensors[i];
+		if (ks.id)
+			ks.lt++;
+		if (ks.lt > Settings::maxTTL)
+			ks.id = 0;
+	}
+}
 
 void PrintData(const TH433ReceiverClass::packet_data& buffer) {
 	for (uint8_t i = 0; i < TH433ReceiverClass::packet_len_bytes; i++) {
@@ -187,6 +208,7 @@ void PrintData(const TH433ReceiverClass::packet_data& buffer) {
 	Serial.print(' ');
 	Serial.println(millis());
 }
+
 
 
 void sendSensorsData() {
@@ -251,7 +273,32 @@ void sendSensorsData() {
 		}break;
 		}
 
-		//tmpData.calc_crc(i);
+		int last = -1, empty = -1, current = -1;
+		uint16_t lt = 0;
+		for (int i = 0; i < sizeofArray(KnownSensors); i++) {
+			KnownSensor& ks = KnownSensors[i];
+			if (!ks.id && empty < 0)
+				empty = i;
+			if (ks.id && ks.lt > lt)
+				lt = ks.lt, last = i;
+			if (ks.id == tmpData.id) {
+				current = i;
+				break;
+			}
+		}
+
+		if (current >= 0) {
+			KnownSensors[current].lt = 0;
+		}else if (empty >= 0) {
+			KnownSensors[empty].id = tmpData.id;
+			KnownSensors[empty].lt = 0;
+		}else if (last >= 0) {
+			KnownSensors[last].id = tmpData.id;
+			KnownSensors[last].lt = 0;
+		}else {
+			KnownSensors[0].id = tmpData.id;
+			KnownSensors[0].lt = 0;
+		}
 
 
 		Serial.println();
@@ -275,7 +322,7 @@ void sendSensorsData() {
 		
 		
 
-		if (tmpData.id) {
+		if (tmpData.id && current >= 0) {
 			char topic[32];
 			sprintf(topic, "WTH433-%d/0x%04x", lpbuffer->type, tmpData.id);
 
@@ -295,6 +342,9 @@ void sendSensorsData() {
 				}
 				Serial.println();
 				//for (;;);
+		
+		}else{
+			Serial.println("ID not found in cashe, ignore");
 		
 		}
 	}
