@@ -43,7 +43,7 @@ public:
 };
 
 
-#define DEBUG_PRINT(x) Serial << DebugStackClass::strrchr_P(F(__FILE__), '\\') << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << x << endl
+#define DEBUG_PRINT(x) Serial << strrchr((__FILE__), '\\') << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << x << endl
 
 #define DEBUG_STACK() DebugStackClass __DebugStack(F(__FILE__), __FUNCTION__, __LINE__)
 #define DEBUG_STACK_PRINT(x) DebugStackClass __DebugStack(F(__FILE__), __FUNCTION__, __LINE__); Serial << x << endl

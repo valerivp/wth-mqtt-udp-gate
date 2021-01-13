@@ -1,5 +1,9 @@
 #include "Arduino.h"
-#include "lwip/ip_addr.h"
+
+extern "C" {
+#include "lwip/init.h"
+#include "lwip/err.h"
+};
 
 #pragma once
 class ConfigStoreClass
