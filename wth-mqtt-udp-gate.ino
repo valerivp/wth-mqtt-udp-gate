@@ -368,7 +368,6 @@ void sendSensorsData() {
 				Serial.print(topic); Serial.print(' '); Serial.print(load);
 				if (ConfigStore.Data.MqttUdpServer.addr) {
 					mqtt_udp_send(0, topic, load);
-					mqtt_udp_send(0, topic, load);
 					//Serial.print(":send");
 				}
 				Serial.println();
